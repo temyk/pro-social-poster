@@ -56,7 +56,6 @@ class Services {
 			$text = $postData->post_excerpt;
 		}
 		$text                  = apply_shortcodes( $text );
-		$text = htmlspecialchars_decode( $text );
 		$link_post             = get_permalink( $post_id ); // ссылка на запись (теперь ЧПУ)
 		$vkposter_id           = CorePlugin::getInstance()->getOptions( 'vkposter_id' ); //ID группы или пользователя
 		$vkposter_friends_only = CorePlugin::getInstance()->getOptions( 'vkposter_friends_only' ); //Доступность записи, 0 - всем
@@ -117,6 +116,7 @@ class Services {
 		} else { //Пост с обрезкой до кол-ва знаков указанных пользователем
 			$short_text = wp_trim_words( wp_kses( $text, 'strip' ), $vkposter_counttext, '...' );
 		}
+
 		$text_clear = wp_kses( $title, 'strip' )
 		              . "\n\n"
 		              . ( $short_text ? $short_text . "\n\n" : '' )
@@ -132,6 +132,7 @@ class Services {
 			"signed"       => $vkposter_signed,
 		];
 
+		$send_text = str_replace( '&nbsp;', ' ', $send_text );
 		if ( $image ) {
 			$argument['message']     = $send_text;
 			$argument['attachments'] = 'photo' . $vkposter_userid . '_' . $image;
