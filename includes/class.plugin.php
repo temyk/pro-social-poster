@@ -28,7 +28,7 @@ class Plugin extends Plugin_Base {
 	 * @throws \Exception Page class not found.
 	 */
 	public function admin_code() {
-		$this->register_page( 'Page_Socials' );
+		//$this->register_page( 'Page_Socials' );
 	}
 
 	public function global_code() {

@@ -254,7 +254,7 @@ class CorePlugin {
 			$queryParams['vkp_repost'] = $post->ID;
 			$queryString               = http_build_query( $queryParams );
 			$url                       = $parts['path'] . '?' . $queryString;
-			$actions['vkp-post']       = '<a href="http://' . $_SERVER["HTTP_HOST"] . $url . '">Отправить вконтакте</a>';
+			$actions['vkp-post'] = '<a href="http://' . $_SERVER["HTTP_HOST"] . $url . '">Отправить в ВК</a>';
 		}
 
 		return $actions;

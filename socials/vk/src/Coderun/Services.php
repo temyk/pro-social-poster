@@ -56,6 +56,7 @@ class Services {
 			$text = $postData->post_excerpt;
 		}
 		$text                  = apply_shortcodes( $text );
+		$text = htmlspecialchars_decode( $text );
 		$link_post             = get_permalink( $post_id ); // ссылка на запись (теперь ЧПУ)
 		$vkposter_id           = CorePlugin::getInstance()->getOptions( 'vkposter_id' ); //ID группы или пользователя
 		$vkposter_friends_only = CorePlugin::getInstance()->getOptions( 'vkposter_friends_only' ); //Доступность записи, 0 - всем

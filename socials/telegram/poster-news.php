@@ -8,7 +8,7 @@ add_action( 'admin_menu', 'register_poster_news_submenu_page' );
 $real_poster_telegram = get_option( 'real_poster_telegram' );
 if ( isset( $real_poster_telegram['on'] ) && $real_poster_telegram['on'] ) {
 	add_action( 'future_to_publish', 'futureSentTelegram', 9 );
-	//add_action( 'transition_post_status', 'transitionSentTelegram', 10, 3 );
+	add_action( 'transition_post_status', 'transitionSentTelegram', 10, 3 );
 }
 
 function real_init_poster_news() {
@@ -57,7 +57,7 @@ function real_poster_news_forms_settings() {
 	$tlg_on     = '';
 	$bot_token  = '';
 	$channel_id = '';
-	$options = get_option( 'real_poster_telegram', [] );
+	$options  = get_option( 'real_poster_telegram', [] );
 	$tlg_logs = get_option( 'log_poster_telegram', [] );
 	if ( $options ) {
 		if ( isset( $options['on'] ) ) {
@@ -190,7 +190,7 @@ function telegram_action_row( $actions, $post ) {
 		$queryString               = http_build_query( $queryParams );
 		$url                       = $parts['path'] . '?' . $queryString;
 		$img                       = '';
-		if ( get_post_meta( $post->ID, '_tlg_poster_meta_value_key', true ) == 'on' ) {
+		if ( is_send_image_to_telegram( $post->ID ) ) {
 			$img = '<span class="dashicons dashicons-format-image" style="font-size: 100%; padding-top: 4px;" title="В сообщение добавлена миниатюра"></span>';
 		}
 		$actions['tlg-post'] = '<a href="http://' . $_SERVER["HTTP_HOST"] . $url . '">Отправить в Telegram' . $img . '</a>';
@@ -238,13 +238,13 @@ function send_news_to_telegram( $post_id, $from = '' ) {
 	$link_post   = get_permalink( $post_id );
 	$images_post = get_attached_file( get_post_thumbnail_id( $post_id ), true );
 
-	//error_log( "Telegram log: '{$title}' sending" );
-
 	$curr_categs = get_the_category( $post_id );
 	$curr_tags   = get_the_tags( $post_id );
 
 	$to_send    = false;
 	$note_title = false;
+
+	/*
 	if ( ! empty( $news_categs ) ) {
 		if ( $curr_categs ) {
 			foreach ( $curr_categs as $category ) {
@@ -257,7 +257,6 @@ function send_news_to_telegram( $post_id, $from = '' ) {
 			}
 		}
 	}
-
 	if ( ! empty( $news_tags ) ) {
 		if ( $curr_tags ) {
 			foreach ( $curr_tags as $tag ) {
@@ -267,8 +266,12 @@ function send_news_to_telegram( $post_id, $from = '' ) {
 			}
 		}
 	}
-
 	if ( empty( $news_categs ) && empty( $news_tags ) ) {
+		$to_send = true;
+	}
+	*/
+	$is_send_post = is_send_post_to_telegram( $post_id );
+	if ( $is_send_post ) {
 		$to_send = true;
 	}
 
@@ -304,7 +307,8 @@ function send_news_to_telegram( $post_id, $from = '' ) {
 	$args       = [
 		'after'      => $note_sing,
 		'text'       => $paragraph,
-		'link'       => add_query_arg( [ 'utm_source' => 'tg' ], $link_post ),
+		//'link'       => add_query_arg( [ 'utm_source' => 'tg' ], $link_post ),
+		'link' => $link_post,
 		'title'      => wp_kses( $title, 'strip' ),
 		'short_link' => wp_get_shortlink( $post_id ),
 	];
@@ -320,7 +324,7 @@ function send_news_to_telegram( $post_id, $from = '' ) {
 
 	$method = 'sendMessage';
 
-	if ( get_post_meta( $post->ID, '_tlg_poster_meta_value_key', true ) == 'on' && $images_post ) {
+	if ( is_send_image_to_telegram( $post_id ) && $images_post ) {
 		$post_fields['photo']   = new CURLFile( $images_post );
 		$post_fields['caption'] = $message;
 		$method                 = 'sendPhoto';
@@ -394,14 +398,28 @@ function tlg_metabox_html( $post ) {
 
 	wp_nonce_field( __FILE__, 'tlg_poster_noncename' );
 
-	if ( get_post_meta( $post->ID, '_tlg_poster_meta_value_key', true ) == 'on' ) {
-		$cheked = 'checked';
+	if ( is_send_post_to_telegram( $post->ID ) ) {
+		$checked = 'checked';
 	} else {
-		$cheked = '';
+		$checked = '';
 	}
 
-	echo "<input type='checkbox' name='telegram_image' {$cheked}/>";
+	?>
+    <div>
+        <input type="checkbox" name="tlg_send_post" id="tlg_send_post" <?php echo $checked; ?>
+        <label for="tlg_send_post">Отправить в Telegram</label>
+    </div>
+	<?php
+
+	if ( is_send_image_to_telegram( $post->ID ) ) {
+		$checked = 'checked';
+	} else {
+		$checked = '';
+	}
+
+	echo "<input type='checkbox' name='telegram_image' {$checked}/>";
 	echo '<span class="description" > Добавить миниатюру в сообщение Telegram при публикации ?</span > ';
+
 
 }
 
@@ -416,8 +434,11 @@ function tlg_metabox_save_post( $post_id ) {
 	if ( ! current_user_can( 'edit_post', $post_id ) ) {
 		return $post_id;
 	}
-	$data = ( isset( $_POST['telegram_image'] ) ) ? 'on' : '';
+	$data = ( isset( $_POST['telegram_image'] ) ) ? 'on' : 'off';
 	update_post_meta( $post_id, '_tlg_poster_meta_value_key', $data );
+
+	$data = ( isset( $_POST['tlg_send_post'] ) ) ? 'on' : 'off';
+	update_post_meta( $post_id, '_tlg_send_post', $data );
 
 }
 
@@ -444,4 +465,26 @@ function tlg_render_template( $template_name, $args = [] ) {
 	}
 
 	return $result;
+}
+
+function is_send_post_to_telegram( $post_id ) {
+	$is_send_post = get_post_meta( $post_id, '_tlg_send_post', true );
+	if ( $is_send_post === 'on' ) {
+		return true;
+	} else if ( $is_send_post === 'off' ) {
+		return false;
+	} else {
+		return true;
+	}
+}
+
+function is_send_image_to_telegram( $post_id ) {
+	$is_send_post = get_post_meta( $post_id, '_tlg_poster_meta_value_key', true );
+	if ( $is_send_post === 'on' ) {
+		return true;
+	} else if ( $is_send_post === 'off' ) {
+		return false;
+	} else {
+		return true;
+	}
 }
