@@ -7,7 +7,7 @@ add_action( 'admin_init', 'real_init_poster_news' );
 add_action( 'admin_menu', 'register_poster_news_submenu_page' );
 $real_poster_telegram = get_option( 'real_poster_telegram' );
 if ( isset( $real_poster_telegram['on'] ) && $real_poster_telegram['on'] ) {
-	add_action( 'future_to_publish', 'futureSentTelegram', 9 );
+	//add_action( 'future_to_publish', 'futureSentTelegram', 9 );
 	add_action( 'transition_post_status', 'transitionSentTelegram', 10, 3 );
 }
 
@@ -139,14 +139,21 @@ function transitionSentTelegram( $new_status, $old_status, \WP_Post $post ) {
 		return null;
 	}
 
-	send_news_to_telegram( $post->ID, '_future' );
+	if ( $new_status === 'publish' ) {
+		if ( $old_status === 'future' ) {
+			send_news_to_telegram( $post->ID, '_future' );
+		} else {
+			send_news_to_telegram( $post->ID, '_publish' );
+		}
+
+	}
+
 }
 
 function futureSentTelegram( $post ) {
 
 	$postData    = get_post( $post );
-	$title       = $postData->post_title;
-	$status_post = $postData->post_status; //Статус поста
+	$status_post = $postData->post_status;
 	if ( $status_post == 'draft' || $status_post == 'private' || $status_post == 'trash' ) {
 		return $post;
 	}

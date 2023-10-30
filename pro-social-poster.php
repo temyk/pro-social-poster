@@ -2,7 +2,7 @@
 /**
  * Plugin Name: PRO Social Poster
  * Description: Автопостинг в соцсети (ТГ, ВК, ОК)
- * Version:     1.0.0
+ * Version:     1.0.1
  * Author:      Webtemyk <webtemyk@yandex.ru>
  * Author URI:  https://temyk.ru
  * Text Domain: pro-social-poster
