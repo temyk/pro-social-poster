@@ -209,7 +209,7 @@ class Services {
 		if ( empty( $images_post ) ) {
 			$media       = get_attached_media( 'image', $post_id );
 			$image       = array_shift( $media );
-			$images_post = get_attached_file( $image->ID ); //Изображение прикреплённое к посту
+			$images_post = $image ? get_attached_file( $image->ID ) : []; //Изображение прикреплённое к посту
 			if ( empty( $images_post ) ) {
 				$images_post = $this->searchImageText( $text ); // Ищем изображение в тексте
 				if ( empty( $images_post ) ) {
@@ -280,7 +280,7 @@ class Services {
 		ob_start();
 		ob_end_clean();
 		$output    = preg_match_all( '/<img.+src=[\'"]([^\'"]+)[\'"].*>/i', $text, $matches );
-		$first_img = $matches [1] [0];
+		$first_img = $matches[1][0] ?? '';
 		$col1      = strlen( WP_CONTENT_URL );
 		$col2      = strlen( $first_img );
 		$patch     = substr( $first_img, $col1, $col2 );
